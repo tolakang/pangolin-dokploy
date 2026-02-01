@@ -1,15 +1,20 @@
 version: "3.9"
+
 services:
   pangolin:
-    image: docker.io/fosrl/pangolin:latest
-    container_name: pangolin
+    image: fosrl/pangolin:latest
     restart: unless-stopped
     volumes:
       - ./config:/app/config
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pangolin.rule=Host(`pangolin.nokor24.com`)"
+      - "traefik.http.routers.pangolin.entrypoints=websecure"
+      - "traefik.http.routers.pangolin.tls=true"
+      - "traefik.http.services.pangolin.loadbalancer.server.port=3001"
 
   gerbil:
-    image: docker.io/fosrl/gerbil:latest
-    container_name: gerbil
+    image: fosrl/gerbil:latest
     restart: unless-stopped
     depends_on:
       - pangolin
@@ -21,16 +26,3 @@ services:
       - ./config:/var/config
     cap_add:
       - NET_ADMIN
-
-  traefik:
-    image: traefik:v3
-    container_name: traefik
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./config/traefik/traefik_config.yml:/etc/traefik/traefik.yml
-      - ./config/traefik/dynamic_config.yml:/etc/traefik/dynamic.yml
-      - ./config/letsencrypt:/letsencrypt
-      - /var/run/docker.sock:/var/run/docker.sock
