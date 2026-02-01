@@ -6,23 +6,37 @@ services:
     restart: unless-stopped
     volumes:
       - ./config:/app/config
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pangolin.rule=Host(`pangolin.nokor24.com`)"
-      - "traefik.http.routers.pangolin.entrypoints=websecure"
-      - "traefik.http.routers.pangolin.tls=true"
-      - "traefik.http.services.pangolin.loadbalancer.server.port=3001"
+    networks:
+      - dokploy-network
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.swarm.network=dokploy-network
+
+        # Router
+        - traefik.http.routers.pangolin.rule=Host(`pangolin.nokor24.com`)
+        - traefik.http.routers.pangolin.entrypoints=websecure
+        - traefik.http.routers.pangolin.tls=true
+
+        # Service
+        - traefik.http.services.pangolin.loadbalancer.server.port=3001
 
   gerbil:
     image: fosrl/gerbil:latest
     restart: unless-stopped
     depends_on:
       - pangolin
+    volumes:
+      - ./config:/var/config
     command:
       - --reachableAt=http://gerbil:3004
       - --generateAndSaveKeyTo=/var/config/key
       - --remoteConfig=http://pangolin:3001/api/v1/
-    volumes:
-      - ./config:/var/config
     cap_add:
       - NET_ADMIN
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
